@@ -1,0 +1,6 @@
+spring:
+    main:
+        web-environment: false
+telegram:
+    token: bottoken
+    username: botusername
