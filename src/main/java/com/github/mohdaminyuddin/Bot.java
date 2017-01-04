@@ -353,14 +353,15 @@ public class Bot extends TelegramLongPollingBot  {
 		String markupResponse="";
 		
 		for (Data ret : r.getData()) {
-			if(ret.getParas_air()==null){
-				ret.setParas_air("Tiada maklumat");
-			}else{
-				ret.setParas_air(ret.getParas_air() + " meter");
-			}
-			markupResponse = "*" + ret.getDaerah() + ", " + ret.getNegeri() + "*\n" + "_" + ret.getNama_laluan() + "_\n"
-					+ "```text\n" + "\n" + "Aras air : " + ret.getParas_air() + "\n" + "Status : " + ret.getStatus()
+			
+			String waterLevel = (ret.getParas_air() == null) ? "Tiada maklumat" : ret.getParas_air() + " meter";
+						
+			String streetName = (ret.getNama_jalan() != null) ? ret.getNama_jalan() : ret.getNama_laluan();
+			
+			markupResponse = "*" + ret.getDaerah() + ", " + ret.getNegeri() + "*\n" + "_" + streetName + "_\n"
+					+ "```text\n" + "\n" + "Aras air : " + waterLevel + "\n" + "Status : " + ret.getStatus()
 					+ "\n" + "```\n" + "[Lihat di Google Maps](" + ret.getGoogle_maps_url() + ")\n";
+			
 			sendMessage.setParseMode("Markdown");
 			sendMessage.setText(markupResponse);
 			sendMessage.setChatId(chatId);
