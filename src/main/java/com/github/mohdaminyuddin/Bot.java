@@ -79,22 +79,25 @@ public class Bot extends TelegramLongPollingBot  {
 			}
 			
 			if(data.startsWith("[N]")){
-				List<String> daerah = this.getDaerah(update.getCallbackQuery().getData().substring(3));
-				
-				AnswerCallbackQuery a = new AnswerCallbackQuery();
-				a.setCallbackQueryId(update.getCallbackQuery().getId());
-				try {
-					answerCallbackQuery(a);
-				} catch (TelegramApiException e) {
-					logger.info("Error sending answer");
-				}
-				
-				SendMessage sendMessage = new SendMessage();
-				
-				sendMessage.setChatId(chatId);
-				sendMessage.setText("Daerah : ");
-							
-				this.returnInlineButton(daerah, "[D]", sendMessage);
+				new Thread(() -> {
+					List<String> daerah = this.getDaerah(update.getCallbackQuery().getData().substring(3));
+					
+					AnswerCallbackQuery a = new AnswerCallbackQuery();
+					a.setCallbackQueryId(update.getCallbackQuery().getId());
+					try {
+						answerCallbackQuery(a);
+					} catch (TelegramApiException e) {
+						logger.info("Error sending answer");
+					}
+					
+					SendMessage sendMessage = new SendMessage();
+					
+					sendMessage.setChatId(chatId);
+					sendMessage.setText("Daerah : ");
+								
+					this.returnInlineButton(daerah, "[D]", sendMessage);
+					
+				}).start();
 			}
 			
 			if(data.startsWith("[D]")){
@@ -153,7 +156,7 @@ public class Bot extends TelegramLongPollingBot  {
 				}
 			} else{
 				
-				if(text.equals("💼 About")){
+				if(text.equals("💼 Info")){
 					
 					this.sendLog(message, text);
 					
@@ -173,23 +176,26 @@ public class Bot extends TelegramLongPollingBot  {
 					sendMessageToUser(sendMessage);
 				} else if(text.equals("🔍 Carian")){
 					
-					List<String> negeri = new ArrayList<>();
-					try {
-						ReportResponse r = getData(0, null);
-						this.sendLog(message, text);
-						for (Data ret : r.getData()) {
-							negeri.add(ret.getNegeri());
+					new Thread(() -> {
+						List<String> negeri = new ArrayList<>();
+						try {
+							ReportResponse r = getData(0, null);
+							this.sendLog(message, text);
+							for (Data ret : r.getData()) {
+								negeri.add(ret.getNegeri());
+							}
+						} catch (Exception e) {
+							logger.info("Failed to get state list");
 						}
-					} catch (Exception e) {
-						logger.info("Failed to get state list");
-					}
+						
+						/*
+						 * Remove duplicate ArrayList
+						 */
+						this.removeDuplicates(negeri);
+						sendMessage.setText("Negeri : ");
+						this.returnInlineButton(negeri, "[N]", sendMessage);
+					}).start();
 					
-					/*
-					 * Remove duplicate ArrayList
-					 */
-					this.removeDuplicates(negeri);
-					sendMessage.setText("Negeri : ");
-					this.returnInlineButton(negeri, "[N]", sendMessage);
 				}else if(text.equals("🌐 Senarai penuh")){
 					try {
 						ReportResponse r = getData(0, null);
@@ -272,7 +278,7 @@ public class Bot extends TelegramLongPollingBot  {
         
         KeyboardRow keyboardSecondRow = new KeyboardRow();
         keyboardSecondRow.add("✉️ Cadangan");
-        keyboardSecondRow.add("💼 About");
+        keyboardSecondRow.add("💼 Info");
         
         keyboard.add(keyboardFirstRow);
         keyboard.add(keyboardSecondRow);
@@ -346,37 +352,41 @@ public class Bot extends TelegramLongPollingBot  {
 	
 	
 	private void sendLog(Message message, String action){
-		//Code for whatever related to statistic here
+	  //Code for whatever related to statistic here
 	}
 	
 	private void responseData(ReportResponse r, SendMessage sendMessage, long chatId) {
-		String markupResponse="";
 		
-		for (Data ret : r.getData()) {
+		new Thread(() -> {
+			String markupResponse="";
 			
-			String waterLevel = (ret.getParas_air() == null) ? "Tiada maklumat" : ret.getParas_air() + " meter";
-						
-			String streetName = (ret.getNama_jalan() != null) ? ret.getNama_jalan() : ret.getNama_laluan();
-			
-			markupResponse = "*" + ret.getDaerah() + ", " + ret.getNegeri() + "*\n" + "_" + streetName + "_\n"
-					+ "```text\n" + "\n" + "Aras air : " + waterLevel + "\n" + "Status : " + ret.getStatus()
-					+ "\n" + "```\n" + "[Lihat di Google Maps](" + ret.getGoogle_maps_url() + ")\n";
-			
-			sendMessage.setParseMode("Markdown");
-			sendMessage.setText(markupResponse);
-			sendMessage.setChatId(chatId);
-			sendMessageToUser(sendMessage);
-			SendLocation sL = new SendLocation();
-			sL.setChatId(chatId);
-			sL.setLatitude(ret.getLatitude());
-			sL.setLongitude(ret.getLongitude());
-			try {
-				sendLocation(sL);
-			} catch (TelegramApiException e) {
-				logger.error("Failed to send location");
-			}
+			for (Data ret : r.getData()) {
+				
+				String waterLevel = (ret.getParas_air() == null) ? "Tiada maklumat" : ret.getParas_air() + " meter";
+							
+				String streetName = (ret.getNama_jalan() != null) ? ret.getNama_jalan() : ret.getNama_laluan();
+				
+				markupResponse = "*" + ret.getDaerah() + ", " + ret.getNegeri() + "*\n" + "_" + streetName + "_\n"
+						+ "```text\n" + "\n" + "Aras air : " + waterLevel + "\n" + "Status : " + ret.getStatus()
+						+ "\n" + "```\n" + "[Lihat di Google Maps](" + ret.getGoogle_maps_url() + ")\n";
+				sendMessage.setParseMode("Markdown");
+				sendMessage.setText(markupResponse);
+				sendMessage.setChatId(chatId);
+				sendMessageToUser(sendMessage);
+				SendLocation sL = new SendLocation();
+				sL.setChatId(chatId);
+				sL.setLatitude(ret.getLatitude());
+				sL.setLongitude(ret.getLongitude());
+				try {
+					sendLocation(sL);
+				} catch (TelegramApiException e) {
+					logger.error("Failed to send location");
+				}
 
-		}
+			}
+		}).start();
+		
+		
 	}
 
 }
