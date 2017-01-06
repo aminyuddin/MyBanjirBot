@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "telegram")
 public class TelegramBotConfig {
 	
-	@NotBlank
+    @NotBlank
     private String token;
 
     @NotBlank
